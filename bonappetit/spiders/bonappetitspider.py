@@ -1,27 +1,31 @@
-from scrapy.spiders import Spider
+# from scrapy.spiders import Spider
+from scrapy.contrib.spiders import CrawlSpider, Rule
+# from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
+from scrapy.linkextractors import LinkExtractor
 from scrapy.selector import Selector
 from bonappetit.items import BonappetitItem
 
-#  'title'   : response.xpath('//*[@id="recipe-ingredients"]/div[2]/div[1]/h3/text()').extract(),
-#           'ingredients' : response.xpath('//*[@id="recipe-ingredients"]/div[2]/div[2]/div[1]/div/ul/li/span/span[3]/text()').extract(),  
-#           'prep' : response.xpath('//*[@id="recipe-ingredients"]/div[2]/div[3]/div[2]/div/ul/li[1]/div/text()').extract()
-#      
-
-class RecipeeSpider(Spider):
+class RecipeeSpider(CrawlSpider):
 	name = "bonappetit"
 	allowed_domains = ["bonappetit.com"]
-	# start_urls = ["http://http://www.bonappetit.com/recipes/"]
-	start_urls = ["http://www.bonappetit.com/recipe/passover-chocolate-toffee-matzo"]
+	start_urls = ["http://www.bonappetit.com/sitemap/recipes"]
+	rules = (
+		Rule(LinkExtractor(restrict_xpaths='//*[@id="wrapper"]/div/div/div/section/div/div[2]/a')), #next button of sitemap/recipes
+		Rule(LinkExtractor(restrict_xpaths='//*[@id="wrapper"]/div/div/div/section/div/li/a'),callback="parse_recipe") #the recipe page we need to scrap
+		)
+	
 
-	def parse(self, response):
+	def parse_recipe(self, response):
 		hxs = Selector(response)
-		print response
 		item = BonappetitItem()
 		items = []
 		item["title"] = response.url
-		item["prep"] = hxs.xpath('//*[@id="recipe-ingredients"]/div[2]/div[3]/div[2]/div/ul/li[1]/div/text()').extract()		
+		item["prep"] = hxs.xpath('//li[contains(@class, "step")]/div/text()').extract()		
 		item["ingredients"] = hxs.xpath('//*[@id="recipe-ingredients"]/div[2]/div[2]/div[1]/div/ul/li/span/span[3]/text()').extract()
-		items.append(item)
-		return item
+		
+		yield item
+	# def parse_recipee_list(self, response):
+	# 	hxs = Selector(response)
+			
 		
 	
